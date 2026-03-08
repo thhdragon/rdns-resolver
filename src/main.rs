@@ -32,7 +32,7 @@ fn main() -> io::Result<()> {
     // push the length and the element to the new vector
     // get the len, push len to vector, push element
     let mut query = Vec::new();
-    // add header
+    // add header: 12 bytes
     query.extend([12, 34]); // TX ID
     query.extend([1, 0]); // Flags: standard query, recursion desired
     query.extend([0, 1]); // QDCOUNT = 1 question
@@ -50,6 +50,8 @@ fn main() -> io::Result<()> {
     query.extend_from_slice(b"arpa");
     query.push(0); // null terminator
     query.extend([0, 12, 0, 1]); // QTYPE=PTR (12), QCLASS=IN (1)
+    let mut cursor: usize = query.len();
+
     let ip: Ipv4Addr = ip.parse().expect("you suck. bad ip address");
     let addr = SocketAddr::from((ip, 53));
     let addr: SockAddr = addr.into();
@@ -64,8 +66,17 @@ fn main() -> io::Result<()> {
         println!("error")
     }
 
-    // skip forward 12 bytes and then iterate until find element `0` (null terminator)
-    let cursor: usize = 12;
+    // parse the response packet
+    // skip to the answer
+    println!("{}, {}", buf[cursor], buf[cursor + 1]); // 192 pointer to name at byte offset 12
+    cursor += 10; // skip pointer to name, type, class, ttl
+    println!("{}, {}", buf[cursor], buf[cursor + 1]); // RDLENGTH
+    let rdlength: usize = u16::from_be_bytes([buf[cursor], buf[cursor + 1]]).into();
+    println!("u16: {}", rdlength);
+    cursor += 2;
+    let rdata = &buf[cursor..(cursor + rdlength - 1)]; // don't read in the null
+    println!("{:?}", rdata);
+
     
     Ok(())
 }
