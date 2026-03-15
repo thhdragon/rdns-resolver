@@ -105,14 +105,57 @@ fn main() -> io::Result<()> {
     // Move cursor past RDLENGTH to start of RDATA
     cursor += 2;
     // Read RDATA based on RDLENGTH (should be the PTR record string)
-    let rdata = &buf[cursor..(cursor + rdlength)]; // don't read in the null
+    let rdata = &buf[cursor..(cursor + rdlength)];
     println!("{:?}", rdata);
 
     // example output: [3, 100, 110, 115, 6, 103, 111, 111, 103, 108, 101, 0]
     // which corresponds to "dns.google" (3=dns, 6=google, 0=null terminator)
-    let mut idx = 0;
-    let len = rdata[idx];
-    println!("{}", len);
-
+    // init len to idx 0 of rdata. should be the first length identifier
+    parse_dns_name(rdata);
     Ok(())
+}
+
+/// Parses a DNS name from the given RDATA bytes, extracting the labels and returning them as a vector of strings.
+///
+/// # Arguments
+///
+/// - `rdata` (`&[u8]`) - The raw bytes of the DNS name to parse.
+///
+/// # Returns
+///
+/// - `Vec<String>` - A vector containing the parsed labels of the DNS name.
+///
+/// # Examples
+///
+/// ```
+/// let rdata = [3, 100, 110, 115, 6, 103, 111, 111, 103, 108, 101, 0]; // corresponds to "dns.google"
+/// let labels = parse_dns_name(&rdata);
+/// assert_eq!(labels, vec!["dns".to_string(), "google".to_string()]);
+/// ```
+fn parse_dns_name(rdata: &[u8]) -> Vec<String> {
+    // DNS names are encoded as a series of labels, each prefixed by its length, and terminated by a zero-length label.
+    // Initialize a mutable slice to traverse the RDATA
+    let mut rest = rdata;
+    // Initialize an empty vector to hold the parsed labels
+    let mut labels: Vec<String> = Vec::new();
+
+    // Loop until we encounter a zero-length label (indicating the end of the name)
+    // In each iteration, we read the length of the next label, extract the label, and update our position in the RDATA
+    // The loop continues as long as there are bytes left to read and the length of the next label is not zero
+    while let Some((&len, tail)) = rest.split_first() {
+        // If the length is zero, we've reached the end of the name
+        if len == 0 {
+            // Break the loop if we encounter a zero-length label, which indicates the end of the name
+            break;
+        }
+        // Extract the label based on the length and update the remaining slice
+        let (label, remaining) = tail.split_at(len as usize);
+        // Convert the label bytes to a string and add it to the labels vector
+        labels.push(String::from_utf8_lossy(label).to_string());
+        // Update the rest slice to continue parsing the next label
+        rest = remaining
+    }
+
+    // Return the vector of parsed labels, which represents the components of the domain name
+    labels
 }
