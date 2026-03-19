@@ -1,31 +1,37 @@
 use std::io;
 
-/// Parses the target IP address and reverses its octets.
-///
-/// # Arguments
-///
-/// - `target` (`&str`) - The target IP address as a string.
-///
-/// # Returns
-///
-/// - `io::Result<Vec<&str>>` - A result containing a vector of the reversed octets if successful, or an I/O error if parsing fails.
-///
-/// # Errors
-///
-/// - Returns an `io::Error` if the input string is not a valid IP address or if any other parsing error occurs.
-///
-/// # Examples
-///
-/// ```
-/// use rdns_resolver::try_from_target;
-/// let ip = try_from_target(target)?;
-/// assert_eq!(ip, vec!["192", "168", "1", "1"]);
-/// ```
-pub(crate) fn try_from_target(target: &str) -> io::Result<Vec<&str>> {
-    let mut parts = target.split(".").collect::<Vec<&str>>();
+pub(crate) fn reverse_octets(target: &str) -> io::Result<Vec<&str>> {
+    let mut parts: Vec<&str> = target.split(".").collect();
     parts.reverse();
     Ok(parts)
 }
 
-// function to build ptr query
-// ==encode as x.x.x.x.in-addr.arpa, assemble DNS wire format==
+// use slice instead of borrowing or owning the vector
+// generic reader that can read from anything that an slice
+pub(crate) fn to_wire(parts: &[&str]) -> Vec<u8> {
+    // setup prefix
+    let prefix = &[
+        12, 13, // arbitrary  transaction ID
+        1, 0, // set flags to standard query and enable recursion.
+        0, 1, // question count
+        0, 0, // junk
+        0, 0, // junk
+        0, 0, // junk
+    ];
+
+    let mut wired = Vec::new();
+    // setup reversed ip in wired
+    for part in parts {
+        let len = part.len() as u8;
+        // get element length push to vec
+        wired.push(len);
+        wired.extend(part.as_bytes());
+    }
+    // setup header tail
+    todo!()
+}
+
+// craft header
+// craft tail
+
+// convert reversed IP to wire format.

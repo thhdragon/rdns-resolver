@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use socket2::{Domain, Protocol, Socket, Type};
 /// A UDP socket for DNS queries.
 ///
 /// # Fields
