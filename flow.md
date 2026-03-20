@@ -28,12 +28,12 @@
 
 ### Question Tail in wire format
 
-- [ ] craft question tail
-  - [ ] length 7 - b"in-addr"
-  - [ ] length 3 - b"arpa"
-  - [ ] length 0 - end of domain name
-  - [ ] two bytes for the query type (set to 0x000C `[0,12]` for PTR record)
-  - [ ] two bytes for the query class (set to 0x0001 `[0,1]` for IN)
+- [x] craft question tail
+  - [x] length 7 - b"in-addr"
+  - [x] length 3 - b"arpa"
+  - [x] length 0 - end of domain name
+  - [x] two bytes for the query type (set to 0x000C `12u16.to_be_bytes()` for PTR record)
+  - [x] two bytes for the query class (set to 0x0001 `1u16.to_be_bytes()` for IN)
 
 ### Combine all sections into a single packet
 

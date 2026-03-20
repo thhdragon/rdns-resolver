@@ -1,4 +1,4 @@
-use std::io::{self, Read};
+use std::io;
 
 use query::*;
 use transport::*;
@@ -11,9 +11,8 @@ mod transport;
 // function to perform the reverse dns lookup
 // ==calls the functions in order==
 pub fn lookup(target: &str) -> io::Result<String> {
-    // get reversed IP from
-    let reversed = reverse_octets(target)?;
-    let wired = to_wire(&reversed);
+    // pass ip str to function to build query packet
+    let query = build_packet(target);
     let dns = DnsSocket::new()?;
     // dns.socket.send_to(packet, address)?;
 
