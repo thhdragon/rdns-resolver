@@ -15,9 +15,9 @@ pub fn lookup(target: &str) -> io::Result<String> {
     let reversed = reverse_octets(target)?;
     let wired = to_wire(&reversed);
     let dns = DnsSocket::new()?;
-    dns.socket.send_to(packet, address)?;
+    // dns.socket.send_to(packet, address)?;
 
     let mut buf = [0u8; 512]; // DNS packets capped at 512b
-    dns.socket.read(&mut buf)?;
+    // dns.socket.read(&mut buf)?;
     Ok(todo!())
 }
