@@ -37,4 +37,12 @@
 
 ### Combine all sections into a single packet
 
-- [ ] combine header, question section, and question tail into a single packet
+- [x] combine header, question section, and question tail into a single packet
+
+## Send Query & Parse Response
+
+- [x] Send packet to DNS server (UDP port 53)
+- [x] Receive response into buffer
+- [x] Parse DNS response header
+- [x] Extract PTR record from answer section
+- [x] Return hostname
