@@ -1,6 +1,15 @@
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use std::{
+    io::{self, Read},
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
+};
+
 const ZONE: &[u8; 14] = b"\x07in-addr\x04arpa\x00";
 const QTYPE_PTR: &[u8; 2] = &12u16.to_be_bytes();
 const QCLASS_IN: &[u8; 2] = &1u16.to_be_bytes();
+const HEADER_LENGTH: usize = 12;
+
 const PREFIX: &[u8; 12] = &[
     0x12, 0x34, // transaction ID
     0x01, 0x00, // set flags to standard query and enable recursion.
@@ -31,30 +40,65 @@ pub(crate) fn build_packet(target: &str) -> Vec<u8> {
     packet
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+/// A UDP socket for DNS queries.
+///
+/// # Fields
+///
+/// - `socket` (`Socket`) - The UDP socket.
+pub(crate) struct DnsSocket {
+    pub(crate) socket: Socket,
+}
 
-//     #[test]
-//     fn test_reverse_octets() {
-//         let result = reverse_octets("8.8.4.4").unwrap();
-//         // use the vec macro to make a vec to compare to
-//         let expected = vec!["4", "4", "8", "8"];
-//         assert_eq!(result, expected)
-//     }
-// #[test]
-// fn test_to_wire_is_valid() {
-//     let parts = vec!["4", "20"]; // arbitrary input to run the function
-//     let result = to_wire(&parts);
+impl DnsSocket {
+    /// Creates a new UDP socket for DNS queries.
+    ///
+    /// # Returns
+    ///
+    /// - `io::Result<Self>` - A result containing a new `DnsSocket` if successful, or an I/O error if the socket could not be created.
+    ///
+    /// # Errors
+    ///
+    /// - Returns an `io::Error` if the socket could not be created, bound, or if the timeout could not be set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::rdns_resolver::transport;
+    ///
+    /// let s = DnsSocket::new();
+    /// ```
+    pub(crate) fn new() -> io::Result<Self> {
+        let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+        let address = SocketAddr::from((IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0));
+        let address = address.into();
+        socket.bind(&address)?;
+        socket.set_write_timeout(Some(Duration::from_millis(200)))?;
+        socket.set_read_timeout(Some(Duration::from_millis(200)))?;
+        Ok(Self { socket })
+    }
+}
 
-//     // test the prefix header
-//     assert_eq!(&result[0..12], &[12, 13, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
+pub(crate) fn query_dns_server(query: &[u8]) -> io::Result<Vec<u8>> {
+    // create dns socket
+    let mut dns_socket = DnsSocket::new()?;
 
-//     // added [4,20] and length labels so 4 bytes for a total of 17.
-//     // check that the header is 17 bytes
-//     assert_eq!(result.len(), 17);
+    // set google dns as the target server
+    let dns_server: SocketAddr = "8.8.8.8:53".parse().unwrap();
+    let dns_server: SockAddr = dns_server.into();
 
-//     // test a small part of the encoding to see if adds length label correctly
-//     assert_eq!((result[12], result[13]), (1, b'4'));
-//     assert_eq!((result[14], result[15]), (2, b'2'));
-// }
+    // send query to dns server
+    dns_socket.socket.send_to(query, &dns_server)?;
+
+    // create buffer for the response
+    let mut buf = [0u8; 512]; // DNS max packet size
+
+    // read dns response into buffer
+    let bytes = dns_socket.socket.read(&mut buf)?;
+
+    // trim the fat and return only answer section
+    Ok(buf[(query.len() + HEADER_LENGTH)..bytes].to_vec())
+}
+
+// ---------response parsing---------------
+// function to extract the ptr record from the response
+// ==find the PTR record in the answer section and return the hostname==

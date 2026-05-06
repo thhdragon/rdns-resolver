@@ -1,11 +1,8 @@
 use std::io;
 
 use query::*;
-use transport::*;
 
 mod query;
-mod response;
-mod transport;
 
 // ---------lib api---------------
 // function to perform the reverse dns lookup
@@ -13,10 +10,23 @@ mod transport;
 pub fn lookup(target: &str) -> io::Result<String> {
     // pass ip str to function to build query packet
     let query = build_packet(target);
-    let dns = DnsSocket::new()?;
-    // dns.socket.send_to(packet, address)?;
 
-    let mut buf = [0u8; 512]; // DNS packets capped at 512b
-    // dns.socket.read(&mut buf)?;
-    Ok(todo!())
+    // ask the dns server our question
+    let labeled_answer = query_dns_server(&query)?;
+
+    //
+
+    Ok("todo!()".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lookup_reverse() {
+        // Set a breakpoint on the next line and step through
+        let result = lookup("8.8.8.8");
+        assert!(result.is_ok());
+    }
 }
