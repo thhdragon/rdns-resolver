@@ -69,11 +69,14 @@ impl DnsSocket {
     /// ```
     pub(crate) fn new() -> io::Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
+
         let address = SocketAddr::from((IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0));
         let address = address.into();
         socket.bind(&address)?;
+
         socket.set_write_timeout(Some(Duration::from_millis(200)))?;
         socket.set_read_timeout(Some(Duration::from_millis(200)))?;
+
         Ok(Self { socket })
     }
 }
@@ -102,3 +105,23 @@ pub(crate) fn query_dns_server(query: &[u8]) -> io::Result<Vec<u8>> {
 // ---------response parsing---------------
 // function to extract the ptr record from the response
 // ==find the PTR record in the answer section and return the hostname==
+// while answer[idx] != 0
+// grab the `len` from idx at [0],
+// put idx+1 through `len` into `host`
+// add `len` to `idx`.
+pub(crate) fn parse_answer(answer: &[u8]) -> String {
+    let mut idx = 0;
+    let mut host = String::new();
+    while answer[idx] != 0 {
+        let len = answer[idx];
+        idx += 1;
+        if let Ok(chunk) = str::from_utf8(&answer[idx..idx + (len as usize)]) {
+            host.push_str(chunk);
+        };
+        idx += len as usize;
+        if answer[idx] != 0 {
+            host.push('.');
+        }
+    }
+    host
+}
