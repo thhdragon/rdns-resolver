@@ -2,8 +2,29 @@ use std::io;
 
 use query::*;
 
-mod query;
+pub(crate) mod query;
 
+/// Public API for reverse DNS resolution
+///
+/// # Arguments
+///
+/// - `target` (`&str`) - The IP address to reverse lookup.
+///
+/// # Returns
+///
+/// - `io::Result<String>` - The hostname.
+///
+/// # Errors
+///
+/// - Returns an `io::Error` if the socket could not be created, bound, or if the timeout could not be set.
+/// - Returns an `io::Error` if the query could not be sent to the DNS server.
+///
+/// # Examples
+///
+/// ```
+/// let hostname = lookup("8.8.8.8").expect("Failed to resolve hostname");
+/// println!("Hostname: {}", hostname);
+/// ```
 pub fn lookup(target: &str) -> io::Result<String> {
     // pass ip str to function to build query packet
     let query = build_packet(target);
