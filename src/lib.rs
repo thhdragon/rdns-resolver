@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, net::IpAddr};
 
 use query::*;
 
@@ -25,7 +25,7 @@ pub(crate) mod query;
 /// let hostname = lookup("8.8.8.8").expect("Failed to resolve hostname");
 /// println!("Hostname: {}", hostname);
 /// ```
-pub fn lookup(target: &str) -> io::Result<String> {
+pub fn lookup(target: IpAddr) -> io::Result<String> {
     // pass ip str to function to build query packet
     let query = build_packet(target);
 
@@ -40,11 +40,13 @@ pub fn lookup(target: &str) -> io::Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::net::Ipv4Addr;
+
     use super::*;
 
     #[test]
     fn test_lookup_reverse() {
-        let result = lookup("8.8.8.8").unwrap();
+        let result = lookup(IpAddr::V4(Ipv4Addr::new(8, 8, 8, 8))).unwrap();
         let expected = String::from("dns.google");
         assert_eq!(result, expected);
     }

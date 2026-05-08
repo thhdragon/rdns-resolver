@@ -40,7 +40,8 @@ const PREFIX: &[u8; 12] = &[
 /// ```
 /// let packet = build_packet("8.8.8.8");
 /// ```
-pub(crate) fn build_packet(target: &str) -> Vec<u8> {
+pub(crate) fn build_packet(target: IpAddr) -> Vec<u8> {
+    let target = target.to_string();
     let mut packet: Vec<u8> = Vec::new();
     // split the IP address on the '.' separators in reverse order and collect into vec
     let parts: Vec<&str> = target.split('.').rev().collect();
