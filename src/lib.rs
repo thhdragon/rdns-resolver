@@ -33,7 +33,7 @@ pub fn lookup(target: IpAddr) -> io::Result<String> {
     let answer = query_dns_server(&query)?;
 
     // parse hostname from answer
-    let hostname = parse_answer(&answer);
+    let hostname = parse_answer(&answer)?;
 
     Ok(hostname)
 }
